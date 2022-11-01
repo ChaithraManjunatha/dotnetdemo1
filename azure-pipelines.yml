@@ -1,35 +1,28 @@
 trigger:
-- main
-- develop
-- feature/*
-- bugfix/*
+- master
 
 pool:
-  name: 'demo'
+  vmImage: 'windows-latest'
 
 variables:
-  repository: 'walmartpayment'
+  buildConfiguration: 'Release'
 
-stages:
-- stage: 'Build'
-  jobs:
-  - job: 'DockerBuild'
-    steps:
-       - script: dotnet build --configuration $(buildConfiguration)
-       displayName: 'dotnet build $(buildConfiguration)'
+steps:
+- task: DotNetCoreCLI@2
+  inputs:
+    command: 'restore'
+    feedsToUse: 'select'
+    vstsFeed: 'my-vsts-feed' # A series of numbers and letters
 
-     - script: dotnet publish -f $(dotNetFramework) -c $(buildConfiguration) -o $(Build.ArtifactStagingDirectory)
-       displayName: Publish Project 
+- task: DotNetCoreCLI@2
+  inputs:
+    command: 'build'
+    arguments: '--configuration $(buildConfiguration)'
+  displayName: 'dotnet build $(buildConfiguration)'
 
-     - task: Npm@1
-       displayName: 'Client Tests'
-       inputs:
-         command: 'custom'
-         workingDir: 'ClientApp'
-         customCommand: 'run test'
-    
-     - task: PublishBuildArtifacts@1
-       inputs:
-         PathtoPublish: '$(Build.ArtifactStagingDirectory)'
-         ArtifactName: 'drop'
-         publishLocation: 'Container'
+ - task: DotNetCoreCLI@2
+  displayName: Build
+  inputs:
+    command: build
+    projects: '**/*.csproj'
+    arguments: '--configuration $(buildConfiguration)' # Update this to match your need 
