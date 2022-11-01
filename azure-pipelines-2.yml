@@ -37,6 +37,7 @@ stages:
           tags: |
             latest
             $(Build.BuildNumber)
+
       - task: PublishPipelineArtifact@1
         inputs:
           artifactName: 'manifests'
@@ -82,3 +83,4 @@ stages:
               imagePullSecrets: |
                 $(imagePullSecret)
               arguments: '-n=walmartdev'
+  
