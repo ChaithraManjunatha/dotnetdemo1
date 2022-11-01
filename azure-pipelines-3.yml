@@ -5,7 +5,7 @@ trigger:
 - bugfix/*
 
 pool:
-  name: 'demo'
+  vmImage: 'windows-latest'
 
 variables:
   repository: 'walmartpayment'
