@@ -34,7 +34,7 @@ stages:
       inputs:
         PathtoPublish: '$(Build.ArtifactStagingDirectory)'
         ArtifactName: $(artifactName)
-        
+        publishLocation: 'Container'
 
 # - task: PublishPipelineArtifact@1
 #   inputs:
@@ -77,3 +77,4 @@ stages:
           #    inputs:
           #       targetType: 'inline'
           #       script: 'echo $(Agent.BuildDirectory)'
+
