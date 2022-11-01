@@ -7,7 +7,7 @@ trigger:
 - '*'
 
 pool:
-  name: batch6
+  vmImage: 'windows-latest'
 
 variables:
   buildConfiguration: 'Release'
