@@ -13,6 +13,7 @@ steps:
     command: 'restore'
     feedsToUse: 'select'
     vstsFeed: 'my-vsts-feed' # A series of numbers and letters
+  displayName: 'Restore'
 
 - task: DotNetCoreCLI@2
   inputs:
@@ -26,7 +27,7 @@ steps:
     command: test
     projects: '**/*Tests/*.csproj'
     arguments: '--configuration $(buildConfiguration) --collect "Code coverage"'
-  displayName: 'dotnet Test'
+  displayName: 'Test'
 
 
 - task: DotNetCoreCLI@2
@@ -35,6 +36,7 @@ steps:
     publishWebProjects: True
     arguments: '--configuration $(BuildConfiguration) --output $(Build.ArtifactStagingDirectory)'
     zipAfterPublish: True
+  displayName: 'Publish'
 
 # this code takes all the files in $(Build.ArtifactStagingDirectory) and uploads them as an artifact of your build.
 - powershell: gci env:* | sort-object name | Format-Table -AutoSize | Out-File $env:BUILD_ARTIFACTSTAGINGDIRECTORY/environment-variables.txt
@@ -43,3 +45,4 @@ steps:
   inputs:
     pathToPublish: '$(Build.ArtifactStagingDirectory)'
     artifactName: drop1
+  displayName: 'Generating Artifact'
