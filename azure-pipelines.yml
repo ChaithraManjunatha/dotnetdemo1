@@ -73,13 +73,25 @@ stages:
 
     - publish: '$(Build.ArtifactStagingDirectory)'
       artifact: $(artifaceName)
-    
-       
-    - task: AzureRmWebAppDeployment@4
-      inputs:
-        ConnectionType: 'AzureRM'
-        azureSubscription: 'Azure subscription 1 (c8b60613-73cf-4ffd-a073-a0a4d30a9096)'
-        appType: 'webAppLinux'
-        WebAppName: 'java-webapp'
-        packageForLinux: '$(System.DefaultWorkingDirectory)/**/*.zip'
+
+- stage: 'DeployDev'
+  displayName: 'Deploy to Dev'
+  # condition: and(succeeded(), eq(variables.isMain, 'true'))
+  variables: 
+    appName: 'bermtecdev2'
+  jobs:
+  - deployment: 'Dev'
+
+    environment: 'Develop'
+    strategy: 
+       runOnce:     
+        deploy:
+          steps:
+          - task: AzureRmWebAppDeployment@4
+            inputs:
+              ConnectionType: 'AzureRM'
+              azureSubscription: 'Pay-As-You-Go(63b33cff-5a1f-40bc-8e84-ad332cd71188)'
+              appType: 'webAppLinux'
+              WebAppName: $(appName)
+              packageForLinux: '$(Pipeline.Workspace)/$(artifaceName)/$(buildConfiguration)/*.zip'
        
