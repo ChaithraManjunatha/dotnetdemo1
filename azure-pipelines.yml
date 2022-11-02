@@ -87,10 +87,11 @@ stages:
        runOnce:     
         deploy:
           steps:
+          
           - task: AzureRmWebAppDeployment@4
             inputs:
-             ConnectionType: 'AzureRM'
-             azureSubscription: 'Azure subscription 1 (c8b60613-73cf-4ffd-a073-a0a4d30a9096)'
-             appType: 'webAppLinux'
-             WebAppName: 'java-webapp'
-             packageForLinux: '$(System.DefaultWorkingDirectory)/**/*.zip'
+              ConnectionType: 'AzureRM'
+              azureSubscription: 'Azure subscription 1 (c8b60613-73cf-4ffd-a073-a0a4d30a9096)'
+              appType: 'webAppLinux'
+              WebAppName: 'dotnetwebapp11'
+              packageForLinux: '$(System.DefaultWorkingDirectory)/**/*.zip'
