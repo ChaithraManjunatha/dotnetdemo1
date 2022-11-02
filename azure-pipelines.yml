@@ -1,79 +1,50 @@
-# ASP.NET Core
-# Build and test ASP.NET Core projects targeting .NET Core.
-# Add steps that run tests, create a NuGet package, deploy, and more:
-# https://docs.microsoft.com/azure/devops/pipelines/languages/dotnet-core
-
 trigger:
-- '*'
-
+- none
+ 
 pool:
-  vmImage: 'ubuntu-latest'
-
+  vmImage: 'windows-latest'
+ 
 variables:
+  buildPlatform: 'Any CPU'
   buildConfiguration: 'Release'
-  azureSPNName: 'Azure' 
-  azureAppServiceName: 'bermtecdev'
-  artifactName: drop
-
-stages:
-- stage: 'Build'
-  jobs:
-  - job: ''
-    steps:
-    - script: dotnet build --configuration $(buildConfiguration)
-      displayName: 'dotnet build $(buildConfiguration)'
-      
-    - task: DotNetCoreCLI@2
-      inputs:
-        command: 'publish'
-        publishWebProjects: true
-        arguments: '--configuration $(buildConfiguration) -o $(Build.ArtifactStagingDirectory)/$(buildConfiguration)'
-        zipAfterPublish: true
-
-    - task: PublishBuildArtifacts@1
-      inputs:
-        PathtoPublish: '$(Build.ArtifactStagingDirectory)'
-        ArtifactName: $(artifactName)
-        publishLocation: 'Container'
-
-# - task: PublishPipelineArtifact@1
-#   inputs:
-#     targetPath: '$(Pipeline.Workspace)'
-#     artifact: 'drop'
-#     publishLocation: 'pipeline'
-
-#Publish it to the Azure App Service
-# - task: AzureWebApp@1
-#   inputs:
-#     appType: webAppLinux
-#     azureSubscription: $(azureSPNName) #this is the name of the SPN
-#     appName: $(azureAppServiceName) #App Service's unique name
-#     package: $(Build.ArtifactStagingDirectory)/**/*.zip
-
-# - stage: 'DeployDev'
-#   displayName: 'Deploy to Dev'
-#   variables: 
-#     appName: 'bermtecdev'
-#   jobs:
-#   - deployment: 'Dev'
-#     pool:
-#       name: test
-#     environment: 'Dev'
-#     strategy: 
-#        runOnce:     
-#         deploy:
-#           steps:
-#            - task: AzureRmWebAppDeployment@4
-#              displayName: 'Deploy .NET Code to Azure App Service '
-#              inputs:
-#               ConnectionType: 'AzureRM'
-#               azureSubscription: 'Azure'
-#               appType: 'webApp'
-#               WebAppName: $(appName)
-#               packageForLinux: '$(Agent.BuildDirectory)/$(artifactName)/$(buildConfiguration)/*.zip'
-
-          #  - task: Bash@3
-          #    displayName: '2nd Bash'
-          #    inputs:
-          #       targetType: 'inline'
-          #       script: 'echo $(Agent.BuildDirectory)'
+  solution: '**/RoundTheCode.AzureTestProject.sln'
+  project: '**/RoundTheCode.AzureTestProject.csproj'
+ 
+steps:
+- task: NuGetToolInstaller@1
+  name: 'NuGetToolInstaller'
+  displayName: 'NuGet tool installer'
+ 
+- task: NuGetCommand@2
+  name: 'NuGetRestore'
+  displayName: 'NuGet restore packages'
+  inputs:
+    command: 'restore'
+    restoreSolution: '$(solution)'
+    feedsToUse: 'select'
+ 
+- task: DotNetCoreCLI@2
+  name: 'Tests'
+  displayName: 'Run tests'
+  inputs:
+    command: 'test'
+    projects: '$(solution)'
+    arguments: '--configuration $(BuildConfiguration)'
+ 
+- task: DotNetCoreCLI@2
+  name: 'Publish'
+  displayName: 'Publish'
+  inputs:
+    command: 'publish'
+    publishWebProjects: false
+    projects: '$(project)'
+    arguments: '--configuration $(BuildConfiguration) --output $(Build.ArtifactStagingDirectory)'
+    zipAfterPublish: false
+ 
+- task: PublishBuildArtifacts@1
+  name: 'PublishBuildArtifacts'
+  displayName: 'Publish build artifacts'
+  inputs:
+    PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+    ArtifactName: 'AzureTestProject'
+    publishLocation: 'Container'
