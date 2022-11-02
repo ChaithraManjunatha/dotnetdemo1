@@ -1,49 +1,79 @@
+# ASP.NET Core
+# Build and test ASP.NET Core projects targeting .NET Core.
+# Add steps that run tests, create a NuGet package, deploy, and more:
+# https://docs.microsoft.com/azure/devops/pipelines/languages/dotnet-core
+
 trigger:
-- master
+- '*'
 
 pool:
-  vmImage: 'windows-latest'
+  vmImage: 'ubuntu-latest'
 
 variables:
   buildConfiguration: 'Release'
+  azureSPNName: 'Azure' 
+  azureAppServiceName: 'bermtecdev'
+  artifactName: drop
 
-steps:
-- task: DotNetCoreCLI@2
-  inputs:
-    command: 'restore'
-    feedsToUse: 'select'
-    vstsFeed: 'my-vsts-feed' # A series of numbers and letters
-  displayName: 'Restore'
+stages:
+- stage: 'Build'
+  jobs:
+  - job: ''
+    steps:
+    - script: dotnet build --configuration $(buildConfiguration)
+      displayName: 'dotnet build $(buildConfiguration)'
+      
+    - task: DotNetCoreCLI@2
+      inputs:
+        command: 'publish'
+        publishWebProjects: true
+        arguments: '--configuration $(buildConfiguration) -o $(Build.ArtifactStagingDirectory)/$(buildConfiguration)'
+        zipAfterPublish: true
 
-- task: DotNetCoreCLI@2
-  inputs:
-    command: 'build'
-    arguments: '--configuration $(buildConfiguration)'
-  displayName: 'Build'
+    - task: PublishBuildArtifacts@1
+      inputs:
+        PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+        ArtifactName: $(artifactName)
+        publishLocation: 'Container'
 
+# - task: PublishPipelineArtifact@1
+#   inputs:
+#     targetPath: '$(Pipeline.Workspace)'
+#     artifact: 'drop'
+#     publishLocation: 'pipeline'
 
-- task: DotNetCoreCLI@2
-  inputs:
-    command: test
-    projects: '**/*Tests/*.csproj'
-    arguments: '--configuration $(buildConfiguration) --collect "Code coverage"'
-  displayName: 'Test'
+#Publish it to the Azure App Service
+# - task: AzureWebApp@1
+#   inputs:
+#     appType: webAppLinux
+#     azureSubscription: $(azureSPNName) #this is the name of the SPN
+#     appName: $(azureAppServiceName) #App Service's unique name
+#     package: $(Build.ArtifactStagingDirectory)/**/*.zip
 
+# - stage: 'DeployDev'
+#   displayName: 'Deploy to Dev'
+#   variables: 
+#     appName: 'bermtecdev'
+#   jobs:
+#   - deployment: 'Dev'
+#     pool:
+#       name: test
+#     environment: 'Dev'
+#     strategy: 
+#        runOnce:     
+#         deploy:
+#           steps:
+#            - task: AzureRmWebAppDeployment@4
+#              displayName: 'Deploy .NET Code to Azure App Service '
+#              inputs:
+#               ConnectionType: 'AzureRM'
+#               azureSubscription: 'Azure'
+#               appType: 'webApp'
+#               WebAppName: $(appName)
+#               packageForLinux: '$(Agent.BuildDirectory)/$(artifactName)/$(buildConfiguration)/*.zip'
 
-
-
-# this code takes all the files in $(Build.ArtifactStagingDirectory) and uploads them as an artifact of your build.
-- powershell: gci env:* | sort-object name | Format-Table -AutoSize | Out-File $env:BUILD_ARTIFACTSTAGINGDIRECTORY/environment-variables.txt
-
-- task: PublishBuildArtifacts@1
-  inputs:
-    pathToPublish: '$(Build.ArtifactStagingDirectory)'
-    artifactName: drop1
-  
-- task: DotNetCoreCLI@2
-  inputs:
-    command: publish
-    publishWebProjects: True
-    arguments: '--configuration $(BuildConfiguration) --output $(Build.ArtifactStagingDirectory)'
-    zipAfterPublish: True
-  displayName: 'Publish'  
+          #  - task: Bash@3
+          #    displayName: '2nd Bash'
+          #    inputs:
+          #       targetType: 'inline'
+          #       script: 'echo $(Agent.BuildDirectory)'
