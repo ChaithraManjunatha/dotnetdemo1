@@ -78,7 +78,7 @@ stages:
   displayName: 'Deploy to Dev'
   # condition: and(succeeded(), eq(variables.isMain, 'true'))
   variables: 
-    appName: 'bermtecdev2'
+    appName: 'dotnetwebapp11'
   jobs:
   - deployment: 'Dev'
 
