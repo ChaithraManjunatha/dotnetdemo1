@@ -1,50 +1,75 @@
 trigger:
-- none
- 
+- main
+- master
+- develop
+- feature/*
+
 pool:
-  vmImage: 'windows-latest'
- 
+  vmImage: ubuntu-latest
+
 variables:
   buildPlatform: 'Any CPU'
   buildConfiguration: 'Release'
-  solution: '**/RoundTheCode.AzureTestProject.sln'
-  project: '**/RoundTheCode.AzureTestProject.csproj'
- 
-steps:
-- task: NuGetToolInstaller@1
-  name: 'NuGetToolInstaller'
-  displayName: 'NuGet tool installer'
- 
-- task: NuGetCommand@2
-  name: 'NuGetRestore'
-  displayName: 'NuGet restore packages'
-  inputs:
-    command: 'restore'
-    restoreSolution: '$(solution)'
-    feedsToUse: 'select'
- 
-- task: DotNetCoreCLI@2
-  name: 'Tests'
-  displayName: 'Run tests'
-  inputs:
-    command: 'test'
-    projects: '$(solution)'
-    arguments: '--configuration $(BuildConfiguration)'
- 
-- task: DotNetCoreCLI@2
-  name: 'Publish'
-  displayName: 'Publish'
-  inputs:
-    command: 'publish'
-    publishWebProjects: false
-    projects: '$(project)'
-    arguments: '--configuration $(BuildConfiguration) --output $(Build.ArtifactStagingDirectory)'
-    zipAfterPublish: false
- 
-- task: PublishBuildArtifacts@1
-  name: 'PublishBuildArtifacts'
-  displayName: 'Publish build artifacts'
-  inputs:
-    PathtoPublish: '$(Build.ArtifactStagingDirectory)'
-    ArtifactName: 'AzureTestProject'
-    publishLocation: 'Container'
+  artifaceName: drop
+  isMain: $[eq(variables['Build.SourceBranch'], 'refs/heads/main')]
+
+stages:
+- stage: 'Build'
+  displayName: 'Build the web application'
+  jobs:
+  - job: 'BuildClient'
+    displayName: 'Build job'
+    pool:
+      vmImage: ubuntu-latest
+
+    steps:
+    # UI Layer
+    - task: Npm@1
+      displayName: 'Restore Angular Dependencies'
+      inputs:
+        command: install
+        workingDir: 'ClientApp'
+        verbose: false
+
+    - task: Npm@1
+      displayName: 'Build Angular'
+      inputs:
+        command: custom
+        workingDir: 'ClientApp'
+        verbose: false
+        customCommand: 'run build --prod'
+
+    - task: Npm@1
+      displayName: 'Test UI'
+      inputs:
+        command: custom
+        workingDir: 'ClientApp'
+        verbose: false
+        customCommand: 'run test --watch=false'
+
+    # Middle Layer
+    - task: DotNetCoreCLI@2
+      displayName: 'Restore project dependencies'
+      inputs:
+        command: 'restore'
+        projects: '**/*.csproj'
+
+    - task: DotNetCoreCLI@2
+      displayName: 'Build the project - $(buildConfiguration)'
+      inputs:
+        command: 'build'
+        arguments: '--no-restore --configuration $(buildConfiguration)'
+        projects: '**/*.csproj'
+
+
+    - task: DotNetCoreCLI@2
+      displayName: 'Publish the project - $(buildConfiguration)'
+      inputs:
+        command: 'publish'
+        projects: '**/*.csproj'
+        publishWebProjects: false
+        arguments: '--no-build --configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)/$(buildConfiguration)'
+        zipAfterPublish: true
+
+    - publish: '$(Build.ArtifactStagingDirectory)'
+      artifact: $(artifaceName)
